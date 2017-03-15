@@ -39,19 +39,41 @@
             android:text="GLS"
             />
 
+            />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="confirm"
-            android:id="@+id/confirmSchedule"
+            android:text="10"
+            android:id="@+id/iteration10"
             />
 
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/backDashboard"
-            android:text="Cancel"
+            android:text="30"
+            android:id="@+id/iteration30"
             />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="100"
+            android:id="@+id/iteration100"
+            />
+
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="300"
+            android:id="@+id/iteration300"
+            />
+
 
     </LinearLayout>
 

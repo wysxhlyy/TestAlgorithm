@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
 
     private static int UNASSIGNEDTASKPENALTY =3;
 
@@ -28,16 +28,16 @@ public class MainActivity extends AppCompatActivity {
     private ArrayList<Task> sortedTask;
     private ArrayList<TechnicianInfo> sortedTech;
     private LatLng startEnd=new LatLng(37.780148,-122.403158);
+    //private LatLng startEnd=new LatLng(37.350044,-121.900939);
     private Double initialCost;
     private Double improveCost=10000000.0;
     private Double minimumCost=10000.0;
 
     private Button hillClimbing;
     private Button guidedLocalSearch;
-    private Button back;
-    private Button confirm;
-    private int iterationTask;
-    private int iterationTech;
+    private int GLSiteration;
+    private int findNeighborIteration;
+    private long startTimeGLS;
 
     private Map<Task,TechnicianInfo> initialResult;
     private Map<Task,TechnicianInfo> improveResult;
@@ -45,6 +45,19 @@ public class MainActivity extends AppCompatActivity {
     private Map<Task,TechnicianInfo> localOptima;
 
     private ArrayList<Integer> penalty;
+
+    private Double minMinimumCost=5000000.0;
+    private Double maxMinimumCost=0.0;
+    private Double totalMinimumCost=0.0;
+
+
+    private Button iteration10;
+    private Button iteration30;
+    private Button iteration100;
+    private Button iteration300;
+
+    private double lambda=1;
+
 
 
     @Override
@@ -56,8 +69,9 @@ public class MainActivity extends AppCompatActivity {
 
         assignData();
 
-        iterationTask=chosentasks.size()*2;
-        iterationTech=chosenTechs.size()*2;
+        GLSiteration=400;
+
+        findNeighborIteration=50;
 
 
         sortTaskBySkill();
@@ -67,7 +81,6 @@ public class MainActivity extends AppCompatActivity {
         initialCost=calculateCost(initialResult);
         //calculate the cost of initial schedule (before hill climbing)
         //improveCost=calculateCost(improveResult);
-
 
         hillClimbing.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -80,22 +93,35 @@ public class MainActivity extends AppCompatActivity {
         guidedLocalSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                CostTimeTask costTimeTask=new CostTimeTask(MainActivity.this);
-                costTimeTask.execute();
-                // guidedLS();
-                //showScheduleInfo();
+
+
+                    CostTimeTask costTimeTask=new CostTimeTask(MainActivity.this);
+                    costTimeTask.execute();
+
+
+                Log.d("max: ",maxMinimumCost+"");
+                Log.d("min: ",minMinimumCost+"");
+                Log.d("Average: ",totalMinimumCost/10+"");
+
             }
         });
-        showScheduleInfo();
+
+        iteration10.setOnClickListener(this);
+        iteration30.setOnClickListener(this);
+        iteration100.setOnClickListener(this);
+        iteration300.setOnClickListener(this);
+        //showScheduleInfo();
 
     }
 
     private void assignData(){
-        TechnicianInfo tech1=new TechnicianInfo(1,120,"tech1");
-        TechnicianInfo tech2=new TechnicianInfo(1,120,"tech2");
-        TechnicianInfo tech3=new TechnicianInfo(1,120,"tech3");
-        TechnicianInfo tech4=new TechnicianInfo(1,120,"tech4");
-        TechnicianInfo tech5=new TechnicianInfo(1,180,"tech5");
+        TechnicianInfo tech1=new TechnicianInfo(1,800,"tech1");
+        TechnicianInfo tech2=new TechnicianInfo(2,800,"tech2");
+        TechnicianInfo tech3=new TechnicianInfo(3,800,"tech3");
+        TechnicianInfo tech4=new TechnicianInfo(1,800,"tech4");
+        TechnicianInfo tech5=new TechnicianInfo(2,800,"tech5");
+        TechnicianInfo tech6=new TechnicianInfo(3,800,"tech6");
+        TechnicianInfo tech7=new TechnicianInfo(3,800,"tech7");
 
 
         chosenTechs.add(tech1);
@@ -103,21 +129,73 @@ public class MainActivity extends AppCompatActivity {
         chosenTechs.add(tech3);
         chosenTechs.add(tech4);
         chosenTechs.add(tech5);
+        chosenTechs.add(tech6);
+        chosenTechs.add(tech7);
 
 
-        Task t1=new Task("task1",1,60,Station.STATION_41);
-        Task t2=new Task("task2",1,60,Station.STATION_40);
-        Task t3=new Task("task3",1,90,Station.STATION_36);
-        Task t4=new Task("task4",1,90,Station.STATION_49);
-        Task t5=new Task("task1",1,120,Station.STATION_48);
+        Task t1=new Task("task1",1,60,Station.STATION_8);
+        Task t2=new Task("task2",1,60,Station.STATION_59);
+        Task t3=new Task("task3",1,60,Station.STATION_60);
+        Task t4=new Task("task4",1,60,Station.STATION_7);
+        Task t5=new Task("task5",1,60,Station.STATION_64);
+        Task t6=new Task("task6",1,60,Station.STATION_4);
+        Task t7=new Task("task7",2,90,Station.STATION_14);
+        Task t8=new Task("task8",2,90,Station.STATION_10);
+        Task t9=new Task("task9",2,90,Station.STATION_9);
+        Task t10=new Task("task10",2,90,Station.STATION_12);
+        Task t11=new Task("task11",2,90,Station.STATION_1);
+        Task t12=new Task("task12",2,90,Station.STATION_2);
+        Task t13=new Task("task13",2,90,Station.STATION_3);
+        Task t14=new Task("task14",2,90,Station.STATION_4);
+        Task t15=new Task("task15",3,120,Station.STATION_5);
+        Task t16=new Task("task16",3,120,Station.STATION_6);
+        Task t17=new Task("task17",3,120,Station.STATION_67);
+        Task t18=new Task("task18",3,120,Station.STATION_58);
+        Task t19=new Task("task19",3,120,Station.STATION_13);
+        Task t20=new Task("task20",3,120,Station.STATION_65);
+
+//        Task t1=new Task("task1",1,60,Station.STATION_40);
+//        Task t2=new Task("task2",1,60,Station.STATION_44);
+//        Task t3=new Task("task3",1,60,Station.STATION_36);
+//        Task t4=new Task("task4",1,60,Station.STATION_29);
+//        Task t5=new Task("task5",1,60,Station.STATION_25);
+//        Task t6=new Task("task6",1,60,Station.STATION_49);
+//        Task t7=new Task("task7",2,90,Station.STATION_20);
+//        Task t8=new Task("task8",2,90,Station.STATION_53);
+//        Task t9=new Task("task9",2,90,Station.STATION_48);
+//        Task t10=new Task("task10",2,90,Station.STATION_22);
+//        Task t11=new Task("task11",2,90,Station.STATION_55);
+//        Task t12=new Task("task12",2,90,Station.STATION_47);
+//        Task t13=new Task("task13",2,90,Station.STATION_33);
+//        Task t14=new Task("task14",2,90,Station.STATION_42);
+//        Task t15=new Task("task15",3,120,Station.STATION_41);
+//        Task t16=new Task("task16",3,120,Station.STATION_43);
+//        Task t17=new Task("task17",3,120,Station.STATION_38);
+//        Task t18=new Task("task18",3,120,Station.STATION_37);
+//        Task t19=new Task("task19",3,120,Station.STATION_40);
+//        Task t20=new Task("task20",3,120,Station.STATION_54);
+
 
         chosentasks.add(t1);
         chosentasks.add(t2);
         chosentasks.add(t3);
         chosentasks.add(t4);
         chosentasks.add(t5);
-
-
+        chosentasks.add(t6);
+        chosentasks.add(t7);
+        chosentasks.add(t8);
+        chosentasks.add(t9);
+        chosentasks.add(t10);
+        chosentasks.add(t11);
+        chosentasks.add(t12);
+        chosentasks.add(t13);
+        chosentasks.add(t14);
+        chosentasks.add(t15);
+        chosentasks.add(t16);
+        chosentasks.add(t17);
+        chosentasks.add(t18);
+        chosentasks.add(t19);
+        chosentasks.add(t20);
 
 
 
@@ -136,12 +214,33 @@ public class MainActivity extends AppCompatActivity {
         GLSresult=new HashMap<>();
         hillClimbing=(Button)findViewById(R.id.hillClimbing);
         guidedLocalSearch=(Button)findViewById(R.id.guidedLoacalSearch);
-        back=(Button)findViewById(R.id.backDashboard);
-        confirm=(Button)findViewById(R.id.confirmSchedule);
         penalty=new ArrayList<Integer>();
         penalty.add(0,0);
         penalty.add(1,0);
         penalty.add(2,0);
+
+        iteration10=(Button)findViewById(R.id.iteration10);
+        iteration30=(Button)findViewById(R.id.iteration30);
+        iteration100=(Button)findViewById(R.id.iteration100);
+        iteration300=(Button)findViewById(R.id.iteration300);
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch (view.getId()){
+            case R.id.iteration10:
+                GLSiteration=400; //3 s 内
+                break;
+            case R.id.iteration30:
+                GLSiteration=1600;// 10s
+                break;
+            case R.id.iteration100:
+                GLSiteration=20000; //1 min
+                break;
+            case R.id.iteration300:
+                GLSiteration=50000; //3 min
+                break;
+        }
     }
 
     private class CostTimeTask extends AsyncTask<String,Integer,String> {
@@ -156,44 +255,88 @@ public class MainActivity extends AppCompatActivity {
             dialog.show();
         }
 
+        @Override
+        protected void onPreExecute() {
+            startTimeGLS=System.currentTimeMillis();
+            super.onPreExecute();
+        }
 
         @Override
         protected String doInBackground(String... strings) {
-            guidedLS();
+            Log.d("initial cost: ",initialCost+"");
+            maxMinimumCost=0.0;
+            minMinimumCost=5000000.0;
+            totalMinimumCost=0.0;
+            for(int i=0;i<10;i++) {
+                penalty.clear();
+                penalty.add(0, 0);
+                penalty.add(1, 0);
+                penalty.add(2, 0);
+                minimumCost = 500000.0;
+                GLSresult = new HashMap<>();
+                localOptima = new HashMap<>();
+                guidedLS();
+                Log.d("cost:",minimumCost.shortValue()+"");
+                if(minimumCost>=maxMinimumCost){
+                    maxMinimumCost=minimumCost;
+                }
+                if(minimumCost<=minMinimumCost){
+                    minMinimumCost=minimumCost;
+                }
+                totalMinimumCost+=minimumCost;
+            }
             return null;
         }
 
         @Override
         protected void onPostExecute(String s) {
-            showScheduleInfo();
+            getPlanInfo.setText("");
+            //showScheduleInfo();
             dialog.dismiss();
+            long endTime=System.currentTimeMillis();
+            Log.d("Time","Running time:"+(endTime-startTimeGLS)+"ms");
+            Log.d("max: ",maxMinimumCost+"");
+            Log.d("min: ",minMinimumCost+"");
+            Log.d("average: ",totalMinimumCost/10+"");
+            getPlanInfo.setText("max: "+maxMinimumCost+",min: "+minMinimumCost+",average: "+totalMinimumCost/10);
         }
     }
 
 
     private void guidedLS(){
         int i=0;
+        Map<Task,TechnicianInfo> initialSchedule=new HashMap<>();
+        initialSchedule.putAll(initialResult);
 
-        while (i<iterationTask){
-            modifiedHillClimbing(initialResult);
+        while (i<GLSiteration){
+            modifiedHillClimbing(initialSchedule);
             ArrayList<Double> localOptimaCost=modifiedCost(localOptima);
 
-            double util1=localOptimaCost.get(1)/(1+penalty.get(0));
-            double util2=localOptimaCost.get(2)/(1+penalty.get(1));
-            double util3=localOptimaCost.get(3)/(1+penalty.get(2));
-            Log.d("util:",util1+","+util2+","+util3);
+            double util1=localOptimaCost.get(2)/(1+penalty.get(0));
+            double util2=localOptimaCost.get(3)/(1+penalty.get(1));
+           // double util3=localOptimaCost.get(3)/(1+penalty.get(2));
+//            Log.d("util:",util1+","+util2+","+util3);
+//            Log.d("penalty:",penalty.get(0)+","+penalty.get(1)+","+penalty.get(2));
+
+//            if(util1<=util2){
+//                if(util2<=util3){
+//                    penalty.set(2,penalty.get(2)+1);
+//                }else {
+//                    penalty.set(1,penalty.get(1)+1);
+//                }
+//            }else if(util1<=util3){
+//                penalty.set(2,penalty.get(2)+1);
+//            }else {
+//                penalty.set(0,penalty.get(0)+1);
+//            }
 
             if(util1<=util2){
-                if(util2<=util3){
-                    penalty.add(2,penalty.get(2)+1);
-                }else {
-                    penalty.add(1,penalty.get(1)+1);
-                }
-            }else if(util1<=util3){
-                penalty.add(2,penalty.get(2)+1);
+                penalty.set(1,penalty.get(1)+1);
             }else {
-                penalty.add(0,penalty.get(0)+1);
+                penalty.set(0,penalty.get(0)+1);
             }
+
+
 
             if(calculateCost(localOptima)<minimumCost){
                 minimumCost=calculateCost(localOptima);
@@ -217,13 +360,13 @@ public class MainActivity extends AppCompatActivity {
 
         boolean find=false;
 
-        Log.d("schedule length: ",schedule.size()+"");
+        //Log.d("schedule length: ",schedule.size()+"");
         newNeighbor.clear();
         newNeighbor=swapToFindNeighbor(schedule);
 
         if(newNeighbor!=null){
             ArrayList<Double> newCostResult=modifiedCost(newNeighbor);
-            if(newCostResult.get(0)<=originCostResult.get(0)){
+            if(newCostResult.get(0)<originCostResult.get(0)){
                 modifiedHillClimbing(newNeighbor);
                 find=true;
             }
@@ -233,7 +376,7 @@ public class MainActivity extends AppCompatActivity {
             newNeighbor=assignToFindNeighbor(schedule);
             if(newNeighbor!=null) {
                 ArrayList<Double> newCostResult = modifiedCost(newNeighbor);
-                if (newCostResult.get(0) <= originCostResult.get(0)) {
+                if (newCostResult.get(0) < originCostResult.get(0)) {
                     modifiedHillClimbing(newNeighbor);
                     find=true;
                 }
@@ -245,10 +388,10 @@ public class MainActivity extends AppCompatActivity {
                 newNeighbor=addUnassignedToFindNeighbor(schedule);
                 if(newNeighbor!=null){
                     ArrayList<Double> newCostResult = modifiedCost(newNeighbor);
-                    Log.d("Test",newCostResult.get(0)+","+originCostResult.get(0));
-                    if(newCostResult.get(0) <= originCostResult.get(0)){
+                   // Log.d("Test",newCostResult.get(0)+","+originCostResult.get(0));
+                    if(newCostResult.get(0) < originCostResult.get(0)){
                         find=true;
-                        Log.d("Test","come");
+                        //Log.d("Test","come");
                         modifiedHillClimbing(newNeighbor);
                     }
                 }
@@ -257,7 +400,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         if(!find){
-            Log.d("Alert: ","find local optima");
+            //Log.d("Alert: ","find local optima");
             localOptima=schedule;
         }
 
@@ -277,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
 
         newNeighbor=swapToFindNeighbor(schedule);
         if(newNeighbor!=null){
-            if(calculateCost(newNeighbor)<=originCost){
+            if(calculateCost(newNeighbor)<originCost){
                 find=true;
                 hillClimbing(newNeighbor);
             }
@@ -287,7 +430,7 @@ public class MainActivity extends AppCompatActivity {
         if(!find){
             newNeighbor=assignToFindNeighbor(schedule);
             if(newNeighbor!=null){
-                if(calculateCost(newNeighbor)<=originCost){
+                if(calculateCost(newNeighbor)<originCost){
                     find=true;
                     hillClimbing(newNeighbor);
                 }
@@ -295,12 +438,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if(!find){
-            Log.d("Test",sortedTask.size()+","+schedule.size());
+          //  Log.d("Test",sortedTask.size()+","+schedule.size());
             if (schedule.size()<sortedTask.size()){
-                Log.d("Test","Enter");
+            //    Log.d("Test","Enter");
                 newNeighbor=addUnassignedToFindNeighbor(schedule);
                 if(newNeighbor!=null){
-                    if(calculateCost(newNeighbor)<=originCost){
+                    if(calculateCost(newNeighbor)<originCost){
                         find=true;
                         hillClimbing(newNeighbor);
                     }
@@ -325,7 +468,7 @@ public class MainActivity extends AppCompatActivity {
         Boolean find=false;
 
 
-        for(int k=0;k<iterationTask;k++){
+        for(int k=0;k<findNeighborIteration;k++){
 
             int i= (int) Math.round(Math.random()*(originSchedule.size()-1));
             int j= (int) Math.round(Math.random()*(originSchedule.size()-1));
@@ -355,15 +498,15 @@ public class MainActivity extends AppCompatActivity {
         ArrayList<Task> tasks=new ArrayList<>();
         tasks.addAll(originSchedule.keySet());
         ArrayList<TechnicianInfo> techs=new ArrayList<>();
-        techs.addAll(originSchedule.values());
+        techs.addAll(sortedTech);
 
         Boolean find=false;
 
-        for(int k=0;k<iterationTask;k++){
+        for(int k=0;k<findNeighborIteration;k++){
             int i= (int) Math.round(Math.random()*(originSchedule.size()-1));
-            int j= (int) Math.round(Math.random()*(originSchedule.size()-1));
+            int j= (int) Math.round(Math.random()*(techs.size()-1));
 
-            if(i!=j&&techs.get(i)!=techs.get(j)&&tasks.get(i).getSkillRequirement()<=techs.get(j).getSkillLevel()){
+            if(i!=j&&originSchedule.get(i)!=techs.get(j)&&tasks.get(i).getSkillRequirement()<=techs.get(j).getSkillLevel()){
                 Map<Task,TechnicianInfo> newResult=new HashMap<>();
                 newResult.putAll(originSchedule);
                 newResult.put(tasks.get(i),techs.get(j));
@@ -398,7 +541,7 @@ public class MainActivity extends AppCompatActivity {
         }
         Boolean find=false;
 
-        for(int k=0;k<iterationTask;k++){
+        for(int k=0;k<findNeighborIteration;k++){
             int i= (int) Math.round(Math.random()*(unassignedTask.size()-1));
             int j= (int) Math.round(Math.random()*(techs.size()-1));
 
@@ -408,7 +551,7 @@ public class MainActivity extends AppCompatActivity {
                 newResult.put(unassignedTask.get(i),techs.get(j));
                 if(calculateWorkHour(newResult,techs.get(j))<=techs.get(j).getWorkHour()){
                     neighbor.putAll(newResult);
-                    Log.d("Test","Found");
+                  //  Log.d("Test","Found");
                     find=true;
                     break;
                 }
@@ -450,6 +593,10 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
 
+                if(assignedTask.size()>=1){
+                    float dist = calculateTravelTime(assignedTask);
+                    cost += (dist / 1000) * 10;  //assume drive speed is 6km/h.
+                }
 
             }
 
@@ -512,7 +659,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        cost+=taskCost*penalty.get(0)+travelCost*penalty.get(1)+unassignedTaskCost*penalty.get(2);
+        //cost+=(taskCost*penalty.get(0)+travelCost*penalty.get(1)+unassignedTaskCost*penalty.get(2))*lambda;
+        cost+=(travelCost*penalty.get(0)+unassignedTaskCost*penalty.get(1))*lambda;
 
         result.add(0,cost);
         result.add(1,taskCost);
@@ -535,14 +683,17 @@ public class MainActivity extends AppCompatActivity {
         showData="";
         showData+="number of tasks:"+sortedTask.size()+", number of technicians:"+sortedTech.size()+"\n\n";
 
-        ArrayList<Task> availableTask= new ArrayList<>();
-        availableTask.addAll(initialResult.keySet());
+        if(improveResult.isEmpty()&&GLSresult.isEmpty()){
+            ArrayList<Task> availableTask= new ArrayList<>();
+            availableTask.addAll(initialResult.keySet());
 
-        for(int i=0;i<availableTask.size();i++){
-            showData+=availableTask.get(i).getName()+",skill:"+availableTask.get(i).getSkillRequirement()+",duration:"+availableTask.get(i).getDuration()+": "+initialResult.get(availableTask.get(i)).getFirstName()+", tech skill:"+initialResult.get(availableTask.get(i)).getSkillLevel()+", work hour:"+initialResult.get(availableTask.get(i)).getWorkHour()+"\n";
+            for(int i=0;i<availableTask.size();i++){
+                showData+=availableTask.get(i).getName()+",skill:"+availableTask.get(i).getSkillRequirement()+",duration:"+availableTask.get(i).getDuration()+": "+initialResult.get(availableTask.get(i)).getFirstName()+", tech skill:"+initialResult.get(availableTask.get(i)).getSkillLevel()+", work hour:"+initialResult.get(availableTask.get(i)).getWorkHour()+"\n";
+            }
+
+            showData+="cost:"+initialCost.shortValue()+"\n";
         }
 
-        showData+="cost:"+initialCost.shortValue()+"\n";
 
         if(!improveResult.isEmpty()){
             ArrayList<Task> improved=new ArrayList<>();
@@ -562,6 +713,7 @@ public class MainActivity extends AppCompatActivity {
             }
             Double finalCost=calculateCost(GLSresult);
             showData+="cost: "+minimumCost.shortValue()+"\n";
+            Log.d("cost:",minimumCost.shortValue()+"");
         }
 
 
@@ -590,20 +742,20 @@ public class MainActivity extends AppCompatActivity {
                                 assignedTask.add(sortedTask.get(k));
                             }
                         }
-                        Log.d("estimate pre:",estimateDur+"");
+                        //Log.d("estimate pre:",estimateDur+"");
                         estimateDur+=calculateDur(sortedTask.get(i).getSkillRequirement(),sortedTech.get(j).getSkillLevel(),sortedTask.get(i).getDuration());           //Add the new task being schedules.
                         assignedTask.add(sortedTask.get(i));
 
                         float dist=calculateTravelTime(assignedTask);
                         estimateDur+=(dist/1000)*2;  //assume drive speed is 30km/h.
-                        Log.d("estimateDurAlready:"+j,estimateDur+" ");
+                        //Log.d("estimateDurAlready:"+j,estimateDur+" ");
                     }else {
                         estimateDur+=calculateDur(sortedTask.get(i).getSkillRequirement(),sortedTech.get(j).getSkillLevel(),sortedTask.get(i).getDuration());           //Add the new task being schedules.
                         assignedTask.add(sortedTask.get(i));
 
                         float dist=calculateTravelTime(assignedTask);
                         estimateDur+=(dist/1000)*2;  //assume drive speed is 30km/h.
-                        Log.d("estimateDur:"+j,estimateDur+" ");
+                        //Log.d("estimateDur:"+j,estimateDur+" ");
                     }
 
 
